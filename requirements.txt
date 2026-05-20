@@ -1,0 +1,5 @@
+anthropic
+openpyxl
+httpx
+PyPDF2
+python-docx

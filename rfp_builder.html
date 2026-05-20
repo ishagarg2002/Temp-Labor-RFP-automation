@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temp Labor RFP Generator</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--p:#1a2332;--accent:#4fc3f7;--s:#10b981;--w:#f59e0b;--d:#ef4444;--bg:#f4f6f8;--sf:#fff;--bd:#e3e8ef;--tx:#1e293b;--mt:#6b7a90;--r:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;font-size:14px}
+.app{display:flex;height:100vh}
+.sidebar{width:250px;background:var(--p);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15)}
+.sb-brand{padding:1rem 1.2rem;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-brand i{color:var(--accent);font-size:1.1rem}
+.nav-lbl{padding:.9rem 1.2rem .25rem;font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:.55rem;padding:.5rem 1.2rem;cursor:pointer;font-size:.78rem;border-left:3px solid transparent;transition:all .1s;color:rgba(255,255,255,.6)}
+.nav-item:hover{background:rgba(255,255,255,.04);color:#fff}
+.nav-item.active{background:rgba(79,195,247,.08);border-left-color:var(--accent);color:#fff;font-weight:500}
+.nav-item i{font-size:.9rem;width:16px;text-align:center}
+.nav-item .badge{margin-left:auto;background:rgba(255,255,255,.1);padding:.08rem .4rem;border-radius:9px;font-size:.6rem;min-width:16px;text-align:center}
+.nav-item .badge.has{background:rgba(79,195,247,.2);color:var(--accent)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:50px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 1.5rem;flex-shrink:0}
+.topbar h2{font-size:.95rem;font-weight:600}
+.topbar-r{margin-left:auto;display:flex;gap:.4rem}
+.content{flex:1;overflow-y:auto;padding:1.5rem}
+.btn{display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;border-radius:var(--r);font-size:.76rem;font-weight:500;border:none;cursor:pointer;transition:all .1s}
+.btn:hover{opacity:.88}
+.btn-p{background:var(--p);color:#fff}.btn-s{background:var(--s);color:#fff}.btn-d{background:var(--d);color:#fff}
+.btn-o{background:none;border:1px solid var(--bd);color:var(--tx)}.btn-o:hover{background:var(--bg)}
+.btn-g{background:none;color:var(--mt);padding:.25rem .35rem}.btn-g:hover{color:var(--d)}
+.btn-lg{padding:.6rem 1.2rem;font-size:.85rem}
+.card{background:var(--sf);border-radius:var(--r);border:1px solid var(--bd);padding:1.2rem;margin-bottom:1rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem}
+.card-h h3{font-size:.88rem;font-weight:600}
+.fg{margin-bottom:.7rem}
+.fg label{display:block;font-size:.68rem;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.02em;margin-bottom:.2rem}
+.fg input,.fg select,.fg textarea{width:100%;padding:.42rem .6rem;border:1px solid var(--bd);border-radius:5px;font-size:.8rem;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:60px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+.tbl-w{overflow-x:auto;border:1px solid var(--bd);border-radius:6px}
+table.t{width:100%;border-collapse:collapse;font-size:.76rem}
+table.t th{background:#f8fafc;padding:.45rem .6rem;text-align:left;font-weight:600;color:var(--mt);font-size:.66rem;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+table.t td{padding:.4rem .6rem;border-bottom:1px solid #f1f5f9}
+table.t tr:last-child td{border-bottom:none}
+table.t tr:hover{background:#fafcfe}
+.chip{display:inline-block;padding:.1rem .4rem;border-radius:3px;font-size:.64rem;font-weight:600;background:#e0f2fe;color:#0369a1}
+.page{display:none}.page.active{display:block}
+.empty{text-align:center;padding:1.5rem;color:var(--mt);font-size:.8rem}
+.toast{position:fixed;bottom:1rem;right:1rem;background:var(--p);color:#fff;padding:.5rem .9rem;border-radius:var(--r);font-size:.78rem;z-index:9999;display:none}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:1.5rem;width:90%;max-width:550px;max-height:80vh;overflow-y:auto}
+.modal h3{margin-bottom:1rem;font-size:.95rem}
+.modal-f{display:flex;justify-content:flex-end;gap:.4rem;margin-top:1.2rem;padding-top:.8rem;border-top:1px solid var(--bd)}
+.upload-box{border:2px dashed var(--bd);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .15s}
+.upload-box:hover{border-color:var(--accent);background:rgba(79,195,247,.02)}
+.upload-box.done{border-color:var(--s);background:rgba(16,185,129,.02)}
+.upload-box i{font-size:2.5rem;color:var(--accent)}
+.upload-box.done i{color:var(--s)}
+.file-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:5px;margin-top:.4rem;font-size:.78rem}
+.file-row .fname{flex:1;font-weight:500}
+.cmd-box{background:#1a2332;color:#4fc3f7;padding:.6rem .8rem;border-radius:5px;font-family:'Cascadia Code',monospace;font-size:.75rem;margin-top:.6rem;user-select:all}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="sb-brand"><i class="ri-file-list-3-line"></i> RFP Generator</div>
+<div class="nav-lbl">Workflow</div>
+<div class="nav-item active" data-p="generate"><i class="ri-magic-line"></i> Generate RFP</div>
+<div class="nav-item" data-p="files"><i class="ri-folder-3-line"></i> Input Files <span class="badge" id="b-files">0</span></div>
+<div class="nav-lbl">Output Preview</div>
+<div class="nav-item" data-p="cover"><i class="ri-file-text-line"></i> 1. Cover Letter</div>
+<div class="nav-item" data-p="req"><i class="ri-checkbox-circle-line"></i> 3. Requirements <span class="badge" id="b-req">0</span></div>
+<div class="nav-item" data-p="quest"><i class="ri-questionnaire-line"></i> 4. Questionnaire <span class="badge" id="b-q">0</span></div>
+<div class="nav-item" data-p="sla"><i class="ri-speed-line"></i> 5. SLAs <span class="badge" id="b-sla">0</span></div>
+<div class="nav-item" data-p="bid"><i class="ri-money-dollar-circle-line"></i> 6. Bid Sheets <span class="badge" id="b-bid">0</span></div>
+<div class="nav-item" data-p="markup"><i class="ri-percent-line"></i> 7. Mark-Up <span class="badge" id="b-mu">0</span></div>
+<div class="nav-item" data-p="disc"><i class="ri-coupon-line"></i> 8. Discounts <span class="badge" id="b-disc">0</span></div>
+<div class="nav-item" data-p="conv"><i class="ri-exchange-dollar-line"></i> 9. Conversion <span class="badge" id="b-conv">0</span></div>
+</aside>
+
+<div class="main">
+<div class="topbar"><h2 id="ptitle">Generate RFP</h2><div class="topbar-r"><button class="btn btn-o" onclick="doReset()"><i class="ri-refresh-line"></i> New</button><button class="btn btn-s" onclick="nav('generate')"><i class="ri-file-excel-2-line"></i> Generate</button></div></div>
+<div class="content">
+
+<!-- GENERATE PAGE -->
+<div class="page active" id="page-generate">
+<div class="card" style="background:linear-gradient(135deg,#1a2332,#2d4a6f);color:#fff;border:none;text-align:center">
+<h3 style="font-size:1.05rem;margin-bottom:.3rem"><i class="ri-robot-line"></i> Temp Labor RFP Generator</h3>
+<p style="opacity:.8;font-size:.78rem;line-height:1.4">Upload input files (RFI, interview notes, past RFP) → Run command → Get Excel output in template format</p>
+</div>
+<div class="card">
+<div class="card-h"><h3>Input Files</h3><button class="btn btn-p" onclick="document.getElementById('fup').click()"><i class="ri-add-line"></i> Add File</button></div>
+<input type="file" id="fup" hidden multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.json,.md">
+<div id="gen-files"></div>
+</div>
+<div class="card" id="cmd-card" style="display:none">
+<div class="card-h"><h3><i class="ri-terminal-line"></i> Run Command</h3><button class="btn btn-o" onclick="doCopyCmd()"><i class="ri-clipboard-line"></i> Copy</button></div>
+<div class="cmd-box" id="cmd-text"></div>
+<p style="font-size:.7rem;color:var(--mt);margin-top:.5rem">Paste in terminal. Excel generates in ~30s and opens automatically.<br>Output: <code>c:\Isha\Claude\Temp labor\output\</code></p>
+</div>
+</div>
+
+<!-- FILES PAGE -->
+<div class="page" id="page-files">
+<div class="card">
+<div class="card-h"><h3>Uploaded Input Files</h3><button class="btn btn-p" onclick="document.getElementById('fup2').click()"><i class="ri-add-line"></i> Add File</button></div>
+<input type="file" id="fup2" hidden multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.json,.md">
+<div id="all-files"></div>
+</div>
+</div>
+
+<!-- COVER LETTER -->
+<div class="page" id="page-cover"><div class="card"><div class="card-h"><h3>1. Cover Letter</h3></div><div id="v-cover" class="empty">Generate RFP to see preview</div></div></div>
+<!-- REQUIREMENTS -->
+<div class="page" id="page-req"><div class="card"><div class="card-h"><h3>3. Requirements</h3></div><div id="v-req" class="empty">Generate RFP to see preview</div></div></div>
+<!-- QUESTIONNAIRE -->
+<div class="page" id="page-quest"><div class="card"><div class="card-h"><h3>4. Questionnaire</h3></div><div id="v-quest" class="empty">Generate RFP to see preview</div></div></div>
+<!-- SLAs -->
+<div class="page" id="page-sla"><div class="card"><div class="card-h"><h3>5. SLAs</h3></div><div id="v-sla" class="empty">Generate RFP to see preview</div></div></div>
+<!-- BID SHEETS -->
+<div class="page" id="page-bid"><div class="card"><div class="card-h"><h3>6. Bid Sheets</h3></div><div id="v-bid" class="empty">Generate RFP to see preview</div></div></div>
+<!-- MARK-UP -->
+<div class="page" id="page-markup"><div class="card"><div class="card-h"><h3>7. Mark-Up</h3></div><div id="v-mu" class="empty">Generate RFP to see preview</div></div></div>
+<!-- DISCOUNTS -->
+<div class="page" id="page-disc"><div class="card"><div class="card-h"><h3>8. Discounts</h3></div><div id="v-disc" class="empty">Generate RFP to see preview</div></div></div>
+<!-- CONVERSION -->
+<div class="page" id="page-conv"><div class="card"><div class="card-h"><h3>9. Conversion Rates</h3></div><div id="v-conv" class="empty">Generate RFP to see preview</div></div></div>
+
+</div></div></div>
+<div class="toast" id="tst"></div>
+
+<script>
+var files = [];
+var lastOutput = null; // stores path of last generated file for preview
+
+// NAV
+document.querySelectorAll('.nav-item[data-p]').forEach(function(el){
+    el.addEventListener('click', function(){ nav(this.getAttribute('data-p')); });
+});
+function nav(p){
+    document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
+    var pg=document.getElementById('page-'+p); if(pg) pg.classList.add('active');
+    var ni=document.querySelector('.nav-item[data-p="'+p+'"]'); if(ni) ni.classList.add('active');
+    var titles={generate:'Generate RFP',files:'Input Files',cover:'1. Cover Letter',req:'3. Requirements',quest:'4. Questionnaire',sla:'5. SLAs',bid:'6. Bid Sheets',markup:'7. Mark-Up',disc:'8. Discounts',conv:'9. Conversion Rates'};
+    document.getElementById('ptitle').textContent=titles[p]||p;
+}
+
+// FILE UPLOAD
+document.getElementById('fup').addEventListener('change', handleFiles);
+document.getElementById('fup2').addEventListener('change', handleFiles);
+
+function handleFiles(e){
+    var newFiles = Array.from(e.target.files);
+    newFiles.forEach(function(file){
+        var reader = new FileReader();
+        var ext = file.name.split('.').pop().toLowerCase();
+        if(ext==='xlsx'||ext==='xls'){
+            reader.onload = function(ev){
+                var data = new Uint8Array(ev.target.result);
+                var wb = XLSX.read(data,{type:'array'});
+                var text = '';
+                wb.SheetNames.forEach(function(name){
+                    var rows = XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
+                    text += '\n=== '+name+' ===\n';
+                    rows.forEach(function(row){
+                        var cells=row.filter(function(c){return c&&String(c).trim();});
+                        if(cells.length) text+=cells.join(' | ')+'\n';
+                    });
+                });
+                files.push({name:file.name, size:file.size, content:text});
+                renderFiles(); updateCmd();
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.onload = function(ev){
+                files.push({name:file.name, size:file.size, content:ev.target.result});
+                renderFiles(); updateCmd();
+            };
+            reader.readAsText(file);
+        }
+    });
+    e.target.value='';
+    toast(newFiles.length+' file(s) added');
+}
+
+function removeFile(idx){
+    files.splice(idx,1);
+    renderFiles(); updateCmd();
+}
+
+function renderFiles(){
+    var html = '';
+    if(!files.length) html='<div class="empty">No files added yet. Click "Add File" to upload.</div>';
+    else files.forEach(function(f,i){
+        html+='<div class="file-row"><i class="ri-file-text-line" style="color:var(--p)"></i><span class="fname">'+f.name+'</span><span style="font-size:.68rem;color:var(--mt)">'+(f.size/1024).toFixed(0)+'KB</span><button class="btn btn-g" onclick="removeFile('+i+')"><i class="ri-delete-bin-line"></i></button></div>';
+    });
+    document.getElementById('gen-files').innerHTML=html;
+    document.getElementById('all-files').innerHTML=html;
+    setBadge('b-files', files.length);
+}
+
+function updateCmd(){
+    var card = document.getElementById('cmd-card');
+    if(!files.length){ card.style.display='none'; return; }
+    card.style.display='block';
+    // Save combined content to a temp file
+    var combined = files.map(function(f){return '=== FILE: '+f.name+' ===\n'+f.content;}).join('\n\n');
+    // Create downloadable combined file
+    var blob = new Blob([combined],{type:'text/plain'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var safeName = 'rfp_input_'+Date.now()+'.txt';
+    a.href=url; a.download=safeName; a.click(); URL.revokeObjectURL(url);
+
+    document.getElementById('cmd-text').textContent='python "c:\\Isha\\Claude\\Temp labor\\run_rfp.py" "'+safeName+'"';
+}
+
+function doCopyCmd(){
+    var text = document.getElementById('cmd-text').textContent;
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    toast('Command copied!');
+}
+
+// RESET
+function doReset(){
+    files=[];lastOutput=null;
+    renderFiles();
+    document.getElementById('cmd-card').style.display='none';
+    ['v-cover','v-req','v-quest','v-sla','v-bid','v-mu','v-disc','v-conv'].forEach(function(id){
+        document.getElementById(id).innerHTML='<div class="empty">Generate RFP to see preview</div>';
+    });
+    ['b-req','b-q','b-sla','b-bid','b-mu','b-disc','b-conv','b-files'].forEach(function(id){setBadge(id,0);});
+    nav('generate');
+    toast('Reset — ready for new RFP');
+}
+
+// BADGES
+function setBadge(id,n){var el=document.getElementById(id);if(el){el.textContent=n;el.classList.toggle('has',n>0);}}
+
+// TOAST
+function toast(m){var t=document.getElementById('tst');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},2500);}
+
+// PREVIEW - load generated output Excel and show in tabs
+// User can drag the output .xlsx onto the page to preview
+document.addEventListener('dragover',function(e){e.preventDefault();});
+document.addEventListener('drop',function(e){
+    e.preventDefault();
+    var file=e.dataTransfer.files[0];
+    if(!file||!file.name.endsWith('.xlsx'))return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+        var data=new Uint8Array(ev.target.result);
+        var wb=XLSX.read(data,{type:'array'});
+        loadPreview(wb);
+        toast('Output loaded — check preview tabs');
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+function loadPreview(wb){
+    // Cover Letter
+    var ws=wb.Sheets['1. Cover Letter'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var html='<table class="t">';
+        rows.forEach(function(row){
+            var cells=row.filter(function(c){return c&&String(c).trim();});
+            if(cells.length) html+='<tr>'+cells.map(function(c){return '<td>'+String(c).substring(0,120)+'</td>';}).join('')+'</tr>';
+        });
+        html+='</table>';
+        document.getElementById('v-cover').innerHTML='<div class="tbl-w">'+html+'</div>';
+    }
+
+    // Requirements
+    ws=wb.Sheets['3. Requirements'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var dataRows=rows.filter(function(r){return r[1]&&!isNaN(r[1]);});
+        setBadge('b-req',dataRows.length);
+        var html='<div class="tbl-w"><table class="t"><thead><tr><th>#</th><th>Category</th><th>Sub-Cat</th><th>Requirement</th></tr></thead><tbody>';
+        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td><span class="chip">'+(r[2]||'All')+'</span></td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td></tr>';});
+        html+='</tbody></table></div>';
+        document.getElementById('v-req').innerHTML=html;
+    }
+
+    // Questionnaire
+    ws=wb.Sheets['4. Questionnaire'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var dataRows=rows.filter(function(r){return r[1]&&!isNaN(r[1]);});
+        setBadge('b-q',dataRows.length);
+        var html='<div class="tbl-w"><table class="t"><thead><tr><th>#</th><th>Category</th><th>Question</th></tr></thead><tbody>';
+        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+(r[2]||'')+'</td><td>'+(r[3]||'')+'</td></tr>';});
+        html+='</tbody></table></div>';
+        document.getElementById('v-quest').innerHTML=html;
+    }
+
+    // SLAs
+    ws=wb.Sheets['5. Service Level Agreements'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var dataRows=rows.filter(function(r){return r[1]&&String(r[1]).length>3&&r[1]!=='KPI';});
+        setBadge('b-sla',dataRows.length);
+        var html='<div class="tbl-w"><table class="t"><thead><tr><th>KPI</th><th>Target</th><th>Period</th></tr></thead><tbody>';
+        dataRows.forEach(function(r){html+='<tr><td><b>'+(r[1]||'')+'</b></td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
+        html+='</tbody></table></div>';
+        document.getElementById('v-sla').innerHTML=html;
+    }
+
+    // Bid Sheets (combine all regions)
+    var allRoles=[];
+    ['6.a Bid Sheet_APAC','6.b Bid Sheet_EMEA','6.c Bid Sheet_LATAM','6.d Bid Sheet_NA'].forEach(function(sn){
+        ws=wb.Sheets[sn];
+        if(!ws)return;
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        rows.forEach(function(r){
+            if(r[1]&&String(r[1]).match(/^[A-Z]{2}\d/)){ allRoles.push(r); }
+        });
+    });
+    setBadge('b-bid',allRoles.length);
+    var html='<div class="tbl-w"><table class="t"><thead><tr><th>ID</th><th>Family</th><th>Title</th><th>Country</th><th>Site</th><th>Demand</th><th>Rate</th></tr></thead><tbody>';
+    allRoles.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+(r[5]||'')+'</td><td>'+(r[6]||'')+'</td><td>'+(r[7]||'')+'</td><td>'+(r[8]?'$'+r[8]:'')+'</td></tr>';});
+    html+='</tbody></table></div>';
+    document.getElementById('v-bid').innerHTML=html;
+
+    // Mark-Up
+    ws=wb.Sheets['7. Bid Sheet_Mark-Up'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var dataRows=rows.filter(function(r){return r[1]&&(r[1]==='APAC'||r[1]==='EMEA'||r[1]==='LATAM'||r[1]==='North America'||r[1]==='NA');});
+        setBadge('b-mu',dataRows.length);
+        var html='<div class="tbl-w"><table class="t"><thead><tr><th>Region</th><th>Location</th><th>Country</th><th>Family</th><th>Demand</th></tr></thead><tbody>';
+        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+(r[2]||'')+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
+        html+='</tbody></table></div>';
+        document.getElementById('v-mu').innerHTML=html;
+    }
+
+    // Discounts
+    ws=wb.Sheets['8. Discounts'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var html='<div class="tbl-w"><table class="t"><tbody>';
+        rows.forEach(function(r){
+            var cells=r.filter(function(c){return c&&String(c).trim();});
+            if(cells.length) html+='<tr>'+cells.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';
+        });
+        html+='</tbody></table></div>';
+        document.getElementById('v-disc').innerHTML=html;
+        setBadge('b-disc', rows.filter(function(r){return r[2]&&!isNaN(r[2]);}).length);
+    }
+
+    // Conversion
+    ws=wb.Sheets['9. Conversion Rates'];
+    if(ws){
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        var dataRows=rows.filter(function(r){return r[2]&&String(r[2]).length>3&&r[2]!=='Location';});
+        setBadge('b-conv',dataRows.length);
+        var html='<div class="tbl-w"><table class="t"><thead><tr><th>Location</th><th>Country</th><th>Currency</th><th>Rate</th></tr></thead><tbody>';
+        dataRows.forEach(function(r){html+='<tr><td>'+r[2]+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
+        html+='</tbody></table></div>';
+        document.getElementById('v-conv').innerHTML=html;
+    }
+}
+
+// INIT
+renderFiles();
+</script>
+</body>
+</html>

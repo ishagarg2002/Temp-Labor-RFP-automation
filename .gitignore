@@ -1,0 +1,20 @@
+# Environment / secrets
+.env
+
+# Output files (generated RFPs)
+output/
+
+# Extracted data (from template parsing)
+extracted/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

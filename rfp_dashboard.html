@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI RFP Generator — Temp Labor</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root{--p:#1e3a5f;--a:#0ea5e9;--s:#10b981;--w:#f59e0b;--d:#ef4444;--bg:#f8fafc;--sf:#fff;--bd:#e2e8f0;--tx:#1e293b;--mt:#64748b}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+        .wrap{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+        .header{background:linear-gradient(135deg,#1e3a5f,#2d6da3);color:#fff;border-radius:12px;padding:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+        .header::after{content:'';position:absolute;top:-30%;right:-10%;width:300px;height:300px;background:rgba(255,255,255,.04);border-radius:50%}
+        .header h1{font-size:1.4rem;margin-bottom:.3rem}
+        .header p{opacity:.8;font-size:.88rem;max-width:600px;line-height:1.5}
+        .steps{display:flex;gap:.5rem;margin:1.5rem 0;flex-wrap:wrap}
+        .step{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.12);padding:.35rem .7rem;border-radius:20px;font-size:.75rem}
+        .step i{font-size:.85rem}
+        .card{background:var(--sf);border-radius:10px;border:1px solid var(--bd);padding:1.4rem;margin-bottom:1.2rem}
+        .card-h{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+        .card-h h2{font-size:1rem;font-weight:600}
+        .card-h i{color:var(--a);font-size:1.1rem}
+        .fg{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
+        .fg label{font-size:.75rem;font-weight:600;color:var(--mt)}
+        .fg input,.fg select,.fg textarea{padding:.55rem .75rem;border:1px solid var(--bd);border-radius:6px;font-size:.84rem;font-family:inherit;transition:border .15s}
+        .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--a);box-shadow:0 0 0 2px rgba(14,165,233,.1)}
+        .fg textarea{resize:vertical;min-height:80px}
+        .fg .hint{font-size:.7rem;color:var(--mt);margin-top:.15rem}
+        .fr{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+        .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+        .full{grid-column:1/-1}
+        .btn{display:inline-flex;align-items:center;gap:.35rem;padding:.55rem 1.1rem;border-radius:6px;font-size:.85rem;font-weight:500;border:none;cursor:pointer;transition:all .15s}
+        .btn-gen{background:var(--s);color:#fff;font-size:1rem;padding:.75rem 2rem}
+        .btn-gen:hover{opacity:.9;transform:translateY(-1px)}
+        .btn-o{background:none;border:1px solid var(--bd);color:var(--tx)}
+        .divider{height:1px;background:var(--bd);margin:1rem 0}
+        .tag{display:inline-block;background:#e0f2fe;color:#0369a1;padding:.15rem .5rem;border-radius:3px;font-size:.7rem;font-weight:500;margin-right:.3rem;margin-bottom:.3rem}
+        .spinner{width:20px;height:20px;border:3px solid var(--bd);border-top-color:var(--a);border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .stat-card{background:#fff;border:1px solid #bbf7d0;border-radius:6px;padding:.5rem .7rem;text-align:center}
+        .stat-card .num{font-size:1.2rem;font-weight:700;color:var(--p)}
+        .stat-card .lbl{font-size:.68rem;color:var(--mt)}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        <h1><i class="ri-robot-2-line"></i> AI-Powered Temp Labor RFP Generator</h1>
+        <p>Enter your RFI insights about the client below. AI will generate the complete RFP — requirements, questionnaire, SLAs, bid sheets, mark-ups — and produce an Excel file matching the template exactly.</p>
+        <div class="steps">
+            <div class="step"><i class="ri-upload-2-line"></i> Upload File / Enter Details</div>
+            <div class="step"><i class="ri-arrow-right-s-line"></i></div>
+            <div class="step"><i class="ri-robot-line"></i> AI Generates RFP</div>
+            <div class="step"><i class="ri-arrow-right-s-line"></i></div>
+            <div class="step"><i class="ri-file-excel-2-line"></i> Download Excel</div>
+        </div>
+    </div>
+
+    <!-- FILE UPLOAD -->
+    <div class="card" style="border:2px dashed var(--a);background:linear-gradient(135deg,#f0f9ff,#e0f2fe)">
+        <div class="card-h"><i class="ri-upload-cloud-2-line"></i><h2>Quick Start — Upload RFI File</h2></div>
+        <p style="font-size:.84rem;color:var(--mt);margin-bottom:1rem">Upload an Excel, PDF, Word, JSON, CSV, or TXT file with your RFI data. The system will extract the content and auto-fill the form below. You can then review/edit before generating.</p>
+        <div id="upload-zone" style="border:2px dashed var(--bd);border-radius:8px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:#fff" ondragover="event.preventDefault();this.style.borderColor='var(--a)';this.style.background='#f0f9ff'" ondragleave="this.style.borderColor='var(--bd)';this.style.background='#fff'" ondrop="handleDrop(event)">
+            <i class="ri-file-upload-line" style="font-size:2.5rem;color:var(--a)"></i>
+            <p style="font-size:.9rem;font-weight:500;margin-top:.5rem">Drag & drop file here, or click to browse</p>
+            <p style="font-size:.75rem;color:var(--mt);margin-top:.3rem">Supports: .xlsx, .pdf, .docx, .json, .csv, .txt</p>
+            <input type="file" id="file-input" accept=".xlsx,.xls,.pdf,.docx,.doc,.json,.csv,.txt" style="display:none" onchange="handleFileSelect(this.files[0])">
+        </div>
+        <div id="upload-status" style="display:none;margin-top:.8rem;padding:.6rem .8rem;border-radius:6px;font-size:.84rem"></div>
+    </div>
+
+    <!-- CLIENT INFO -->
+    <div class="card">
+        <div class="card-h"><i class="ri-building-2-line"></i><h2>Client Information</h2></div>
+        <div class="fr">
+            <div class="fg"><label>Company Name *</label><input id="f-company" placeholder="e.g., Viatris Inc."></div>
+            <div class="fg"><label>Industry *</label><input id="f-industry" placeholder="e.g., Pharmaceuticals, Manufacturing"></div>
+        </div>
+        <div class="fr">
+            <div class="fg"><label>Company Size</label><input id="f-size" placeholder="e.g., 10,000+ employees, Fortune 500"></div>
+            <div class="fg"><label>Headquarters</label><input id="f-hq" placeholder="e.g., Pittsburgh, USA"></div>
+        </div>
+        <div class="fr">
+            <div class="fg"><label>Contact Name</label><input id="f-contact"></div>
+            <div class="fg"><label>Contact Email</label><input id="f-email"></div>
+        </div>
+    </div>
+
+    <!-- SCOPE -->
+    <div class="card">
+        <div class="card-h"><i class="ri-global-line"></i><h2>RFP Scope</h2></div>
+        <div class="fr">
+            <div class="fg"><label>Regions *</label><input id="f-regions" placeholder="e.g., APAC, EMEA, LATAM, North America"><div class="hint">Comma-separated</div></div>
+            <div class="fg"><label>Total Headcount Needed</label><input id="f-headcount" placeholder="e.g., 400 temp workers"></div>
+        </div>
+        <div class="fg"><label>Countries in Scope *</label><textarea id="f-countries" placeholder="e.g., US, Puerto Rico, India, Japan, China, France, Ireland, Germany, Brazil, Egypt, Italy, Switzerland"></textarea></div>
+        <div class="fg"><label>Business Units</label><input id="f-units" placeholder="e.g., Operations, Quality, Commercial, R&D, Finance"></div>
+        <div class="fr">
+            <div class="fg"><label>Contract Duration</label><input id="f-duration" placeholder="e.g., 3 years with 2x1-year renewals"></div>
+            <div class="fg"><label>Worker Classification</label><input id="f-class" placeholder="e.g., W-2 through staffing agency"></div>
+        </div>
+    </div>
+
+    <!-- RFI INSIGHTS -->
+    <div class="card">
+        <div class="card-h"><i class="ri-lightbulb-line"></i><h2>RFI Insights & Key Requirements</h2></div>
+        <div class="fg"><label>Core Insights / Brief *</label>
+            <textarea id="f-insights" style="min-height:150px" placeholder="Paste your RFI insights here. Include:&#10;- What the client is trying to achieve&#10;- Pain points with current suppliers&#10;- Key priorities (cost, speed, quality, compliance)&#10;- Any specific program requirements&#10;- Consolidation goals&#10;- Technology/VMS preferences&#10;&#10;Example: Client wants to consolidate from 15 agencies to 3-5 strategic partners. Currently experiencing 25% no-show rate in warehouse roles. Need suppliers who can guarantee <5% no-show. Want VMS implementation (SAP Fieldglass preferred). Strong focus on GMP compliance for manufacturing sites. Need 24-hour replacement SLA for critical production roles."></textarea>
+        </div>
+        <div class="fg"><label>Roles Needed *</label>
+            <textarea id="f-roles" style="min-height:100px" placeholder="Describe the roles needed. Be specific about:&#10;- Job families and titles&#10;- Locations for each&#10;- Approximate headcount per role&#10;- Pay rate ranges if known&#10;- Special certifications needed&#10;&#10;Example:&#10;- 150 Production Operators (Dalian China, France sites, Puerto Rico) - $12-30/hr depending on location&#10;- 50 Quality Inspectors (all manufacturing sites) - need GMP training&#10;- 30 Warehouse/Logistics (India, US) - forklift cert for 10&#10;- 20 Admin/Clerical (Japan, India) - bilingual preferred&#10;- 15 IT/Project Management (Remote US, India) - $40-100/hr"></textarea>
+        </div>
+    </div>
+
+    <!-- INDUSTRY SPECIFICS -->
+    <div class="card">
+        <div class="card-h"><i class="ri-flask-line"></i><h2>Industry-Specific & Compliance</h2></div>
+        <div class="fg"><label>Industry-Specific Requirements</label>
+            <textarea id="f-industry-spec" placeholder="e.g., GMP/cGMP compliance, sterile manufacturing, cleanroom protocols, FDA-regulated environment, aseptic technique qualification, OSHA requirements, forklift certification, specific software proficiency"></textarea>
+        </div>
+        <div class="fg"><label>Compliance Focus Areas</label>
+            <textarea id="f-compliance" placeholder="e.g., Co-employment risk mitigation, FCRA background checks (US), GDPR compliance (EU), worker tenure limits, data privacy, E-Verify, drug screening requirements"></textarea>
+        </div>
+        <div class="fr">
+            <div class="fg"><label>Supplier Model</label><input id="f-model" placeholder="e.g., Multi-supplier, MSP-led, Direct"></div>
+            <div class="fg"><label>Technology / VMS</label><input id="f-tech" placeholder="e.g., SAP Fieldglass, Beeline, VNDLY"></div>
+        </div>
+    </div>
+
+    <!-- COMMERCIAL -->
+    <div class="card">
+        <div class="card-h"><i class="ri-money-dollar-circle-line"></i><h2>Commercial Preferences</h2></div>
+        <div class="fr3">
+            <div class="fg"><label>Payment Terms</label><input id="f-payment" value="Net 60"></div>
+            <div class="fg"><label>Mark-Up Expectations</label><input id="f-markup" placeholder="e.g., 25-40% depending on role"></div>
+            <div class="fg"><label>Conversion Fee</label><input id="f-convfee" value="$0"></div>
+        </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="card">
+        <div class="card-h"><i class="ri-calendar-line"></i><h2>Timeline</h2></div>
+        <div class="fr3">
+            <div class="fg"><label>RFP Release Date</label><input id="f-d1" placeholder="e.g., June 1, 2026"></div>
+            <div class="fg"><label>Questions Due</label><input id="f-d2" placeholder="e.g., June 10, 2026"></div>
+            <div class="fg"><label>Submission Deadline</label><input id="f-d3" placeholder="e.g., June 30, 2026"></div>
+        </div>
+    </div>
+
+    <!-- ADDITIONAL -->
+    <div class="card">
+        <div class="card-h"><i class="ri-file-info-line"></i><h2>Additional Context (Optional)</h2></div>
+        <div class="fg"><label>Any other information the AI should consider</label>
+            <textarea id="f-extra" placeholder="e.g., Previous vendor relationships, known issues, budget constraints, DE&I goals, preferred reporting format, governance requirements..."></textarea>
+        </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div style="text-align:center;padding:1.5rem 0">
+        <button class="btn btn-gen" id="gen-btn" onclick="generateRFP()"><i class="ri-magic-line"></i> Generate RFP</button>
+        <p style="font-size:.75rem;color:var(--mt);margin-top:.6rem">One-click generation — no terminal commands needed</p>
+        <button class="btn btn-o" style="margin-top:.6rem" onclick="downloadJSON()"><i class="ri-download-line"></i> Export JSON Only</button>
+    </div>
+
+    <!-- Progress indicator -->
+    <div class="card" id="progress-box" style="display:none;border-color:var(--a)">
+        <div style="display:flex;align-items:center;gap:.6rem">
+            <div class="spinner"></div>
+            <div>
+                <h4 style="font-size:.9rem" id="progress-title">Generating RFP...</h4>
+                <p style="font-size:.78rem;color:var(--mt)" id="progress-msg">AI is creating requirements, questions, SLAs, bid sheets & mark-ups. This takes 30-60 seconds.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success output -->
+    <div class="card" id="success-box" style="display:none;border-color:var(--s);background:#f0fdf4">
+        <div class="card-h"><i class="ri-checkbox-circle-fill" style="color:var(--s)"></i><h2 style="color:#166534">RFP Generated Successfully!</h2></div>
+        <div id="stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.8rem 0"></div>
+        <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+            <a id="download-link" class="btn btn-gen" style="text-decoration:none"><i class="ri-download-2-line"></i> Download RFP Excel</a>
+            <button class="btn btn-o" onclick="resetForm()"><i class="ri-refresh-line"></i> Generate Another</button>
+        </div>
+    </div>
+
+    <!-- Error output -->
+    <div class="card" id="error-box" style="display:none;border-color:var(--d);background:#fef2f2">
+        <div class="card-h"><i class="ri-error-warning-fill" style="color:var(--d)"></i><h2 style="color:#991b1b">Generation Failed</h2></div>
+        <p style="font-size:.84rem" id="error-msg"></p>
+        <p style="font-size:.78rem;color:var(--mt);margin-top:.5rem">Make sure the server is running: <code>python rfp_server.py</code></p>
+    </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+
+// ========== FILE UPLOAD ==========
+document.getElementById('upload-zone').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+});
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.target.style.borderColor = 'var(--bd)';
+    e.target.style.background = '#fff';
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+}
+
+function handleFileSelect(file) {
+    if (!file) return;
+    const status = document.getElementById('upload-status');
+    status.style.display = 'block';
+    status.style.background = '#e0f2fe';
+    status.style.color = '#0369a1';
+    status.innerHTML = `<i class="ri-loader-4-line"></i> Reading <strong>${file.name}</strong>...`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch(`${API_BASE}/upload`, { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) {
+                status.style.background = '#fef2f2';
+                status.style.color = '#991b1b';
+                status.innerHTML = `<i class="ri-error-warning-line"></i> ${res.error}`;
+                return;
+            }
+            status.style.background = '#f0fdf4';
+            status.style.color = '#166534';
+            status.innerHTML = `<i class="ri-checkbox-circle-line"></i> <strong>${file.name}</strong> loaded successfully! Form fields auto-filled below.`;
+            populateForm(res.data);
+        })
+        .catch(err => {
+            status.style.background = '#fef2f2';
+            status.style.color = '#991b1b';
+            status.innerHTML = `<i class="ri-error-warning-line"></i> Upload failed. Is the server running? <code>python rfp_server.py</code>`;
+        });
+}
+
+function populateForm(data) {
+    const map = {
+        'f-company': 'company', 'f-industry': 'industry', 'f-size': 'company_size',
+        'f-hq': 'headquarters', 'f-contact': 'contact_name', 'f-email': 'contact_email',
+        'f-regions': 'regions', 'f-countries': 'countries', 'f-headcount': 'headcount',
+        'f-units': 'business_units', 'f-duration': 'duration', 'f-class': 'worker_classification',
+        'f-insights': 'insights', 'f-roles': 'roles_needed',
+        'f-industry-spec': 'industry_specifics', 'f-compliance': 'compliance_focus',
+        'f-model': 'supplier_model', 'f-tech': 'tech_requirements',
+        'f-payment': 'payment_terms', 'f-markup': 'markup_expectations',
+        'f-convfee': 'conversion_fee', 'f-extra': 'additional_context'
+    };
+    for (const [fieldId, key] of Object.entries(map)) {
+        const el = document.getElementById(fieldId);
+        if (el && data[key]) el.value = data[key];
+    }
+    if (data.timeline) {
+        if (data.timeline.release) document.getElementById('f-d1').value = data.timeline.release;
+        if (data.timeline.questions) document.getElementById('f-d2').value = data.timeline.questions;
+        if (data.timeline.deadline) document.getElementById('f-d3').value = data.timeline.deadline;
+    }
+}
+
+// ========== FORM DATA COLLECTION ==========
+function collectFormData() {
+    return {
+        company: document.getElementById('f-company').value.trim(),
+        industry: document.getElementById('f-industry').value.trim(),
+        company_size: document.getElementById('f-size').value.trim(),
+        headquarters: document.getElementById('f-hq').value.trim(),
+        contact_name: document.getElementById('f-contact').value.trim(),
+        contact_email: document.getElementById('f-email').value.trim(),
+        regions: document.getElementById('f-regions').value.trim(),
+        countries: document.getElementById('f-countries').value.trim(),
+        headcount: document.getElementById('f-headcount').value.trim(),
+        business_units: document.getElementById('f-units').value.trim(),
+        duration: document.getElementById('f-duration').value.trim(),
+        worker_classification: document.getElementById('f-class').value.trim(),
+        insights: document.getElementById('f-insights').value.trim(),
+        roles_needed: document.getElementById('f-roles').value.trim(),
+        industry_specifics: document.getElementById('f-industry-spec').value.trim(),
+        compliance_focus: document.getElementById('f-compliance').value.trim(),
+        supplier_model: document.getElementById('f-model').value.trim(),
+        tech_requirements: document.getElementById('f-tech').value.trim(),
+        payment_terms: document.getElementById('f-payment').value.trim(),
+        markup_expectations: document.getElementById('f-markup').value.trim(),
+        conversion_fee: document.getElementById('f-convfee').value.trim(),
+        timeline: {
+            release: document.getElementById('f-d1').value.trim(),
+            deadline: document.getElementById('f-d3').value.trim(),
+            questions: document.getElementById('f-d2').value.trim()
+        },
+        additional_context: document.getElementById('f-extra').value.trim(),
+        title: 'Temporary Labor Global Agency RFP'
+    };
+}
+
+// ========== ONE-CLICK RFP GENERATION ==========
+async function generateRFP() {
+    const data = collectFormData();
+    if (!data.company) { alert('Company name is required'); return; }
+    if (!data.insights) { alert('RFI Insights are required'); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line"></i> Generating...';
+
+    document.getElementById('progress-box').style.display = 'block';
+    document.getElementById('success-box').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('progress-box').scrollIntoView({behavior:'smooth'});
+
+    try {
+        const res = await fetch(`${API_BASE}/generate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+
+        document.getElementById('progress-box').style.display = 'none';
+
+        if (result.error) {
+            document.getElementById('error-box').style.display = 'block';
+            document.getElementById('error-msg').textContent = result.error;
+        } else {
+            document.getElementById('success-box').style.display = 'block';
+            document.getElementById('download-link').href = `${API_BASE}/download/${result.output_file}`;
+
+            const stats = result.stats;
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = `
+                <div class="stat-card"><div class="num">${stats.requirements}</div><div class="lbl">Requirements</div></div>
+                <div class="stat-card"><div class="num">${stats.questions}</div><div class="lbl">Questions</div></div>
+                <div class="stat-card"><div class="num">${stats.slas}</div><div class="lbl">SLAs</div></div>
+                <div class="stat-card"><div class="num">${stats.roles}</div><div class="lbl">Roles</div></div>
+                <div class="stat-card"><div class="num">${stats.markups}</div><div class="lbl">Mark-ups</div></div>
+                <div class="stat-card"><div class="num">${stats.conversions}</div><div class="lbl">Conversions</div></div>
+            `;
+            document.getElementById('success-box').scrollIntoView({behavior:'smooth'});
+        }
+    } catch (err) {
+        document.getElementById('progress-box').style.display = 'none';
+        document.getElementById('error-box').style.display = 'block';
+        document.getElementById('error-msg').textContent = 'Could not connect to server. Make sure rfp_server.py is running.';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ri-magic-line"></i> Generate RFP';
+}
+
+// ========== EXPORT JSON (OFFLINE FALLBACK) ==========
+function downloadJSON() {
+    const data = collectFormData();
+    if (!data.company) { alert('Company name is required'); return; }
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rfi_insights.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function resetForm() {
+    document.getElementById('success-box').style.display = 'none';
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ========== SAVE/RESTORE FORM STATE ==========
+window.onbeforeunload = () => {
+    const fields = ['f-company','f-industry','f-size','f-hq','f-contact','f-email','f-regions','f-countries','f-headcount','f-units','f-duration','f-class','f-insights','f-roles','f-industry-spec','f-compliance','f-model','f-tech','f-payment','f-markup','f-convfee','f-d1','f-d2','f-d3','f-extra'];
+    const state = {};
+    fields.forEach(id => state[id] = document.getElementById(id).value);
+    localStorage.setItem('rfp_dash_state', JSON.stringify(state));
+};
+window.onload = () => {
+    try {
+        const state = JSON.parse(localStorage.getItem('rfp_dash_state'));
+        if (state) Object.keys(state).forEach(id => { if (document.getElementById(id)) document.getElementById(id).value = state[id]; });
+    } catch(e) {}
+};
+</script>
+</body>
+</html>
