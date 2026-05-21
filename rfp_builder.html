@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Temp Labor RFP Generator</title>
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--p:#1a2332;--accent:#4fc3f7;--s:#10b981;--w:#f59e0b;--d:#ef4444;--bg:#f4f6f8;--sf:#fff;--bd:#e3e8ef;--tx:#1e293b;--mt:#6b7a90;--r:8px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -22,6 +21,10 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .nav-item i{font-size:.9rem;width:16px;text-align:center}
 .nav-item .badge{margin-left:auto;background:rgba(255,255,255,.1);padding:.08rem .4rem;border-radius:9px;font-size:.6rem;min-width:16px;text-align:center}
 .nav-item .badge.has{background:rgba(79,195,247,.2);color:var(--accent)}
+.nav-item .del-tab{display:none;margin-left:auto;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:.85rem}
+.nav-item:hover .del-tab{display:inline}.nav-item:hover .badge{display:none}
+.add-tab-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem 1.2rem;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer}
+.add-tab-btn:hover{color:var(--accent)}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .topbar{height:50px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 1.5rem;flex-shrink:0}
 .topbar h2{font-size:.95rem;font-weight:600}
@@ -42,7 +45,6 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--accent)}
 .fg textarea{resize:vertical;min-height:60px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
 .tbl-w{overflow-x:auto;border:1px solid var(--bd);border-radius:6px}
 table.t{width:100%;border-collapse:collapse;font-size:.76rem}
 table.t th{background:#f8fafc;padding:.45rem .6rem;text-align:left;font-weight:600;color:var(--mt);font-size:.66rem;text-transform:uppercase;border-bottom:1px solid var(--bd)}
@@ -61,11 +63,11 @@ table.t tr:hover{background:#fafcfe}
 .upload-box{border:2px dashed var(--bd);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .15s}
 .upload-box:hover{border-color:var(--accent);background:rgba(79,195,247,.02)}
 .upload-box.done{border-color:var(--s);background:rgba(16,185,129,.02)}
-.upload-box i{font-size:2.5rem;color:var(--accent)}
-.upload-box.done i{color:var(--s)}
+.upload-box i{font-size:2.5rem;color:var(--accent)}.upload-box.done i{color:var(--s)}
 .file-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:5px;margin-top:.4rem;font-size:.78rem}
 .file-row .fname{flex:1;font-weight:500}
-.cmd-box{background:#1a2332;color:#4fc3f7;padding:.6rem .8rem;border-radius:5px;font-family:'Cascadia Code',monospace;font-size:.75rem;margin-top:.6rem;user-select:all}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -75,305 +77,361 @@ table.t tr:hover{background:#fafcfe}
 <div class="nav-lbl">Workflow</div>
 <div class="nav-item active" data-p="generate"><i class="ri-magic-line"></i> Generate RFP</div>
 <div class="nav-item" data-p="files"><i class="ri-folder-3-line"></i> Input Files <span class="badge" id="b-files">0</span></div>
-<div class="nav-lbl">Output Preview</div>
-<div class="nav-item" data-p="cover"><i class="ri-file-text-line"></i> 1. Cover Letter</div>
-<div class="nav-item" data-p="req"><i class="ri-checkbox-circle-line"></i> 3. Requirements <span class="badge" id="b-req">0</span></div>
-<div class="nav-item" data-p="quest"><i class="ri-questionnaire-line"></i> 4. Questionnaire <span class="badge" id="b-q">0</span></div>
-<div class="nav-item" data-p="sla"><i class="ri-speed-line"></i> 5. SLAs <span class="badge" id="b-sla">0</span></div>
-<div class="nav-item" data-p="bid"><i class="ri-money-dollar-circle-line"></i> 6. Bid Sheets <span class="badge" id="b-bid">0</span></div>
-<div class="nav-item" data-p="markup"><i class="ri-percent-line"></i> 7. Mark-Up <span class="badge" id="b-mu">0</span></div>
-<div class="nav-item" data-p="disc"><i class="ri-coupon-line"></i> 8. Discounts <span class="badge" id="b-disc">0</span></div>
-<div class="nav-item" data-p="conv"><i class="ri-exchange-dollar-line"></i> 9. Conversion <span class="badge" id="b-conv">0</span></div>
+<div class="nav-lbl">RFP Tabs</div>
+<div id="tab-nav"></div>
+<div class="add-tab-btn" onclick="openModal('m-addtab')"><i class="ri-add-circle-line"></i> Add Tab</div>
+<div class="nav-lbl">Export</div>
+<div class="nav-item" data-p="export"><i class="ri-file-excel-2-line"></i> Download Excel</div>
 </aside>
-
 <div class="main">
-<div class="topbar"><h2 id="ptitle">Generate RFP</h2><div class="topbar-r"><button class="btn btn-o" onclick="doReset()"><i class="ri-refresh-line"></i> New</button><button class="btn btn-s" onclick="nav('generate')"><i class="ri-file-excel-2-line"></i> Generate</button></div></div>
-<div class="content">
+<div class="topbar"><h2 id="ptitle">Generate RFP</h2><div class="topbar-r"><button class="btn btn-o" onclick="doReset()"><i class="ri-refresh-line"></i> New</button><button class="btn btn-s" onclick="doExport()"><i class="ri-download-2-line"></i> Download .xlsx</button></div></div>
+<div class="content" id="main-content">
 
-<!-- GENERATE PAGE -->
+<!-- GENERATE -->
 <div class="page active" id="page-generate">
 <div class="card" style="background:linear-gradient(135deg,#1a2332,#2d4a6f);color:#fff;border:none;text-align:center">
 <h3 style="font-size:1.05rem;margin-bottom:.3rem"><i class="ri-robot-line"></i> Temp Labor RFP Generator</h3>
-<p style="opacity:.8;font-size:.78rem;line-height:1.4">Upload input files (RFI, interview notes, past RFP) → Run command → Get Excel output in template format</p>
+<p style="opacity:.8;font-size:.78rem">Upload file → AI fills all tabs → Edit if needed → Download formatted Excel</p>
 </div>
 <div class="card">
-<div class="card-h"><h3>Input Files</h3><button class="btn btn-p" onclick="document.getElementById('fup').click()"><i class="ri-add-line"></i> Add File</button></div>
-<input type="file" id="fup" hidden multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.json,.md">
-<div id="gen-files"></div>
+<div class="card-h"><h3>Upload Client File</h3></div>
+<div class="upload-box" id="upbox" onclick="document.getElementById('fup').click()">
+<i class="ri-upload-cloud-2-line"></i>
+<p style="font-size:.88rem;font-weight:600;margin-top:.3rem" id="up-label">Click to upload</p>
+<p style="font-size:.74rem;color:var(--mt)">RFI, interview notes, past RFP, SOW — any format</p>
 </div>
-<div class="card" id="cmd-card" style="display:none">
-<div class="card-h"><h3><i class="ri-terminal-line"></i> Run Command</h3><button class="btn btn-o" onclick="doCopyCmd()"><i class="ri-clipboard-line"></i> Copy</button></div>
-<div class="cmd-box" id="cmd-text"></div>
-<p style="font-size:.7rem;color:var(--mt);margin-top:.5rem">Paste in terminal. Excel generates in ~30s and opens automatically.<br>Output: <code>c:\Isha\Claude\Temp labor\output\</code></p>
+<input type="file" id="fup" hidden accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.json,.md">
+<div id="gen-status" style="display:none;margin-top:.8rem;text-align:center;font-size:.82rem"></div>
 </div>
 </div>
 
-<!-- FILES PAGE -->
+<!-- FILES -->
 <div class="page" id="page-files">
-<div class="card">
-<div class="card-h"><h3>Uploaded Input Files</h3><button class="btn btn-p" onclick="document.getElementById('fup2').click()"><i class="ri-add-line"></i> Add File</button></div>
+<div class="card"><div class="card-h"><h3>Input Files</h3><button class="btn btn-p" onclick="document.getElementById('fup2').click()"><i class="ri-add-line"></i> Add</button></div>
 <input type="file" id="fup2" hidden multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.json,.md">
-<div id="all-files"></div>
-</div>
+<div id="all-files"><div class="empty">No files</div></div></div>
 </div>
 
-<!-- COVER LETTER -->
-<div class="page" id="page-cover"><div class="card"><div class="card-h"><h3>1. Cover Letter</h3></div><div id="v-cover" class="empty">Generate RFP to see preview</div></div></div>
-<!-- REQUIREMENTS -->
-<div class="page" id="page-req"><div class="card"><div class="card-h"><h3>3. Requirements</h3></div><div id="v-req" class="empty">Generate RFP to see preview</div></div></div>
-<!-- QUESTIONNAIRE -->
-<div class="page" id="page-quest"><div class="card"><div class="card-h"><h3>4. Questionnaire</h3></div><div id="v-quest" class="empty">Generate RFP to see preview</div></div></div>
-<!-- SLAs -->
-<div class="page" id="page-sla"><div class="card"><div class="card-h"><h3>5. SLAs</h3></div><div id="v-sla" class="empty">Generate RFP to see preview</div></div></div>
-<!-- BID SHEETS -->
-<div class="page" id="page-bid"><div class="card"><div class="card-h"><h3>6. Bid Sheets</h3></div><div id="v-bid" class="empty">Generate RFP to see preview</div></div></div>
-<!-- MARK-UP -->
-<div class="page" id="page-markup"><div class="card"><div class="card-h"><h3>7. Mark-Up</h3></div><div id="v-mu" class="empty">Generate RFP to see preview</div></div></div>
-<!-- DISCOUNTS -->
-<div class="page" id="page-disc"><div class="card"><div class="card-h"><h3>8. Discounts</h3></div><div id="v-disc" class="empty">Generate RFP to see preview</div></div></div>
-<!-- CONVERSION -->
-<div class="page" id="page-conv"><div class="card"><div class="card-h"><h3>9. Conversion Rates</h3></div><div id="v-conv" class="empty">Generate RFP to see preview</div></div></div>
+<!-- EXPORT -->
+<div class="page" id="page-export">
+<div class="card" style="text-align:center;padding:2rem">
+<i class="ri-file-excel-2-line" style="font-size:3rem;color:var(--s)"></i>
+<h3 style="margin:.5rem 0">Download RFP Excel</h3>
+<p style="color:var(--mt);font-size:.8rem;margin-bottom:1rem">Formatted Excel using the template structure, with all your data and edits.</p>
+<button class="btn btn-s btn-lg" onclick="doExport()"><i class="ri-download-2-line"></i> Download .xlsx</button>
+</div>
+</div>
 
 </div></div></div>
+
+<!-- MODAL: ADD TAB -->
+<div class="modal-bg" id="m-addtab"><div class="modal"><h3>Add New Tab</h3>
+<div class="fg"><label>Tab Name *</label><input id="mt-name" placeholder="e.g., 6.e Bid Sheet_Middle East"></div>
+<div class="fg"><label>Tab Type</label><select id="mt-type"><option value="bidsheet">Bid Sheet (roles & rates)</option><option value="table">Table (custom columns)</option><option value="freeform">Freeform text</option></select></div>
+<div class="fg"><label>Columns (for table type, comma-separated)</label><input id="mt-cols" placeholder="e.g., Region, Location, Country, Family, Demand"></div>
+<div class="modal-f"><button class="btn btn-o" onclick="closeModal('m-addtab')">Cancel</button><button class="btn btn-s" onclick="addTab()">Add</button></div>
+</div></div>
+
+<!-- MODAL: ADD ROW -->
+<div class="modal-bg" id="m-addrow"><div class="modal"><h3 id="mr-title">Add Row</h3>
+<div id="mr-fields"></div>
+<div class="modal-f"><button class="btn btn-o" onclick="closeModal('m-addrow')">Cancel</button><button class="btn btn-s" onclick="saveRow()">Add</button></div>
+</div></div>
+
 <div class="toast" id="tst"></div>
 
 <script>
+var SERVER = 'http://localhost:5000';
+var D = null; // Full RFP data from AI
 var files = [];
-var lastOutput = null; // stores path of last generated file for preview
+var customTabs = []; // user-added tabs
+var editingTabId = null;
 
-// NAV
-document.querySelectorAll('.nav-item[data-p]').forEach(function(el){
-    el.addEventListener('click', function(){ nav(this.getAttribute('data-p')); });
+// Default tab definitions
+var defaultTabs = [
+    {id:'cover',name:'1. Cover Letter',type:'freeform'},
+    {id:'req',name:'3. Requirements',type:'table',cols:['#','Category','Sub-Category','Requirement','Response','Comment']},
+    {id:'quest',name:'4. Questionnaire',type:'table',cols:['#','Category','Question','Response']},
+    {id:'sla',name:'5. SLAs',type:'table',cols:['KPI','Definition','Target','Period','Source','Comply','Comments']},
+    {id:'bid_apac',name:'6.a Bid Sheet_APAC',type:'bidsheet',cols:['RFP ID','Job Family','Title','Description','Country','Site','Demand','Pay Rate','Proposed','OT','Bidding?','Comments']},
+    {id:'bid_emea',name:'6.b Bid Sheet_EMEA',type:'bidsheet',cols:['RFP ID','Job Family','Title','Description','Country','Site','Demand','Pay Rate','Proposed','OT','Bidding?','Comments']},
+    {id:'bid_latam',name:'6.c Bid Sheet_LATAM',type:'bidsheet',cols:['RFP ID','Job Family','Title','Description','Country','Site','Demand','Pay Rate','Proposed','OT','Bidding?','Comments']},
+    {id:'bid_na',name:'6.d Bid Sheet_NA',type:'bidsheet',cols:['RFP ID','Job Family','Title','Description','Country','Site','Demand','Pay Rate','Proposed','OT','Bidding?','Comments']},
+    {id:'markup',name:'7. Bid Sheet_Mark-Up',type:'table',cols:['Region','Location','Country','Job Family','Demand','Standard %','OT %','Comments']},
+    {id:'disc',name:'8. Discounts',type:'table',cols:['Type','Range Low','Range High','Rate %','Notes']},
+    {id:'conv',name:'9. Conversion Rates',type:'table',cols:['Location','Country','Currency','Rate to $1 USD']}
+];
+
+// Tab data (rows per tab)
+var tabData = {};
+defaultTabs.forEach(function(t){tabData[t.id]={rows:[],content:''};});
+
+// ===== UPLOAD & AI GENERATE =====
+document.getElementById('fup').addEventListener('change', function(e){
+    var file = e.target.files[0]; if(!file) return;
+    files.push({name:file.name,size:file.size});
+    document.getElementById('upbox').classList.add('done');
+    document.getElementById('up-label').textContent = file.name;
+    document.getElementById('gen-status').style.display='block';
+    document.getElementById('gen-status').innerHTML='<span class="loading"></span> AI is generating your RFP... (30 seconds)';
+    renderFileList();
+
+    var formData = new FormData();
+    formData.append('file', file);
+
+    fetch(SERVER+'/api/generate', {method:'POST', body:formData})
+        .then(function(r){return r.json();})
+        .then(function(data){
+            if(data.error){document.getElementById('gen-status').innerHTML='<span style="color:var(--d)">Error: '+data.error+'</span>';return;}
+            D = data;
+            populateTabs(data);
+            document.getElementById('gen-status').innerHTML='<span style="color:var(--s)"><i class="ri-checkbox-circle-fill"></i> Done! All tabs populated. Review and download.</span>';
+            renderSidebar();
+            toast('RFP generated — review tabs then download Excel');
+        })
+        .catch(function(err){
+            document.getElementById('gen-status').innerHTML='<span style="color:var(--d)">Server error — make sure server.py is running (python server.py)</span>';
+        });
+    this.value='';
 });
+
+document.getElementById('fup2').addEventListener('change',function(e){
+    Array.from(e.target.files).forEach(function(f){files.push({name:f.name,size:f.size});});
+    renderFileList(); e.target.value='';
+});
+
+function populateTabs(data){
+    // Cover Letter
+    var ps=data.projectSetup||{};
+    tabData['cover'].content = ps.clientName+' Temporary Labor Global Agency RFP\n\nAbout '+ps.clientName+'\n'+(ps.description||'')+'\n\nRFP Objective\n'+(data.requirements||{}).overview+'\n\nScope: '+(ps.countries||'')+'\nBusiness Units: '+(ps.units||'')+'\n\nTimeline:\n- Release: '+((ps.timeline||{}).issueDate||'TBD')+'\n- Due: '+((ps.timeline||{}).proposalDue||'TBD')+'\n\nContact: '+(ps.contactName||'')+' / '+(ps.contactEmail||'');
+
+    // Requirements
+    tabData['req'].rows = (data.requirements||{}).items ? data.requirements.items.map(function(r,i){return [i+1,r.category||'All',r.subcategory||'',r.text||'','',''];}) : [];
+
+    // Questionnaire
+    var qrows=[]; var qi=0;
+    ((data.questionnaire||{}).sections||[]).forEach(function(sec){(sec.questions||[]).forEach(function(q){qi++;qrows.push([qi,sec.name,q.text||'','']);});});
+    tabData['quest'].rows = qrows;
+
+    // SLAs
+    tabData['sla'].rows = (data.slas||[]).map(function(s){return [s.name||'',s.description||'',s.target||'',s.frequency||'Monthly',s.source||'','',''];});
+
+    // Bid Sheets by region
+    var roles = (data.bidSheets||{}).roles||[];
+    ['APAC','EMEA','LATAM','NA'].forEach(function(region){
+        var key = 'bid_'+region.toLowerCase();
+        tabData[key].rows = roles.filter(function(r){return r.region===region;}).map(function(r){
+            return [r.id||'',r.family||'',r.title||'',r.desc||'',r.country||'',r.site||'',r.demand||'',r.rate||'','','','',''];
+        });
+    });
+
+    // Mark-Up
+    tabData['markup'].rows = (data.markup||{}).rows ? data.markup.rows.map(function(m){return [m.region||'',m.location||'',m.country||'',m.family||'',m.demand||'','','',''];}) : [];
+
+    // Discounts
+    var drows=[];
+    ((data.discounts||{}).conversion||[]).forEach(function(d){drows.push(['Conversion',d.low||'',d.high||'',d.pct||'','']);});
+    ((data.discounts||{}).rebate||[]).forEach(function(d){drows.push(['Rebate',d.low||'',d.high||'',d.pct||'','']);});
+    ((data.discounts||{}).tenure||[]).forEach(function(d){drows.push(['Tenure',d.low||'',d.high||'',d.pct||'','']);});
+    tabData['disc'].rows = drows;
+
+    // Conversion
+    tabData['conv'].rows = ((data.conversion||{}).fxRates||[]).map(function(c){return [c.location||'',c.country||'',c.currency||'',c.rate||''];});
+
+    renderSidebar();
+    renderAllPages();
+}
+
+// ===== SIDEBAR =====
+function renderSidebar(){
+    var allTabs = defaultTabs.concat(customTabs);
+    var html='';
+    allTabs.forEach(function(tab){
+        var td = tabData[tab.id]||{rows:[],content:''};
+        var cnt = tab.type==='freeform'?(td.content?1:0):td.rows.length;
+        html+='<div class="nav-item" data-p="tab_'+tab.id+'"><i class="ri-'+(tab.type==='bidsheet'?'money-dollar-circle':tab.type==='freeform'?'file-text':'list-check')+'-line"></i> '+tab.name+' <span class="badge'+(cnt>0?' has':'')+'">'+cnt+'</span><button class="del-tab" onclick="event.stopPropagation();deleteTab(\''+tab.id+'\')">×</button></div>';
+    });
+    document.getElementById('tab-nav').innerHTML=html;
+    bindNav();
+}
+
+// ===== RENDER PAGES =====
+function renderAllPages(){
+    document.querySelectorAll('.dynamic-page').forEach(function(el){el.remove();});
+    var allTabs = defaultTabs.concat(customTabs);
+    allTabs.forEach(function(tab){
+        var page=document.createElement('div');
+        page.className='page dynamic-page';page.id='page-tab_'+tab.id;
+        page.innerHTML=renderTabHTML(tab);
+        document.getElementById('main-content').appendChild(page);
+    });
+}
+
+function renderTabHTML(tab){
+    var td=tabData[tab.id]||{rows:[],content:''};
+    if(tab.type==='freeform'){
+        return '<div class="card"><div class="card-h"><h3>'+tab.name+'</h3></div><div class="fg"><textarea style="min-height:250px" onchange="tabData[\''+tab.id+'\'].content=this.value">'+escHtml(td.content||'')+'</textarea></div></div>';
+    }
+    var html='<div class="card"><div class="card-h"><h3>'+tab.name+'</h3><button class="btn btn-p" onclick="openAddRow(\''+tab.id+'\')"><i class="ri-add-line"></i> Add Row</button></div>';
+    if(!td.rows.length) html+='<div class="empty">No data yet</div>';
+    else{
+        html+='<div class="tbl-w"><table class="t"><thead><tr>';
+        tab.cols.forEach(function(c){html+='<th>'+c+'</th>';});
+        html+='<th></th></tr></thead><tbody>';
+        td.rows.forEach(function(row,ri){
+            html+='<tr>';
+            tab.cols.forEach(function(c,ci){html+='<td>'+(row[ci]||'')+'</td>';});
+            html+='<td><button class="btn btn-g" onclick="deleteRow(\''+tab.id+'\','+ri+')"><i class="ri-delete-bin-line"></i></button></td></tr>';
+        });
+        html+='</tbody></table></div>';
+    }
+    return html+'</div>';
+}
+
+function refreshTab(tabId){
+    var allTabs=defaultTabs.concat(customTabs);
+    var tab=allTabs.find(function(t){return t.id===tabId;});
+    if(!tab)return;
+    var page=document.getElementById('page-tab_'+tabId);
+    if(page) page.innerHTML=renderTabHTML(tab);
+    renderSidebar();
+}
+
+// ===== NAV =====
+function bindNav(){
+    document.querySelectorAll('.nav-item[data-p]').forEach(function(el){el.onclick=function(){nav(this.getAttribute('data-p'));};});
+}
 function nav(p){
     document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
     document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
-    var pg=document.getElementById('page-'+p); if(pg) pg.classList.add('active');
-    var ni=document.querySelector('.nav-item[data-p="'+p+'"]'); if(ni) ni.classList.add('active');
-    var titles={generate:'Generate RFP',files:'Input Files',cover:'1. Cover Letter',req:'3. Requirements',quest:'4. Questionnaire',sla:'5. SLAs',bid:'6. Bid Sheets',markup:'7. Mark-Up',disc:'8. Discounts',conv:'9. Conversion Rates'};
-    document.getElementById('ptitle').textContent=titles[p]||p;
+    var pg=document.getElementById('page-'+p);if(pg)pg.classList.add('active');
+    var ni=document.querySelector('.nav-item[data-p="'+p+'"]');if(ni)ni.classList.add('active');
+    var allTabs=defaultTabs.concat(customTabs);
+    var tab=allTabs.find(function(t){return 'tab_'+t.id===p;});
+    document.getElementById('ptitle').textContent=tab?tab.name:({generate:'Generate RFP',files:'Input Files',export:'Download Excel'}[p]||p);
 }
 
-// FILE UPLOAD
-document.getElementById('fup').addEventListener('change', handleFiles);
-document.getElementById('fup2').addEventListener('change', handleFiles);
-
-function handleFiles(e){
-    var newFiles = Array.from(e.target.files);
-    newFiles.forEach(function(file){
-        var reader = new FileReader();
-        var ext = file.name.split('.').pop().toLowerCase();
-        if(ext==='xlsx'||ext==='xls'){
-            reader.onload = function(ev){
-                var data = new Uint8Array(ev.target.result);
-                var wb = XLSX.read(data,{type:'array'});
-                var text = '';
-                wb.SheetNames.forEach(function(name){
-                    var rows = XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
-                    text += '\n=== '+name+' ===\n';
-                    rows.forEach(function(row){
-                        var cells=row.filter(function(c){return c&&String(c).trim();});
-                        if(cells.length) text+=cells.join(' | ')+'\n';
-                    });
-                });
-                files.push({name:file.name, size:file.size, content:text});
-                renderFiles(); updateCmd();
-            };
-            reader.readAsArrayBuffer(file);
-        } else {
-            reader.onload = function(ev){
-                files.push({name:file.name, size:file.size, content:ev.target.result});
-                renderFiles(); updateCmd();
-            };
-            reader.readAsText(file);
-        }
-    });
-    e.target.value='';
-    toast(newFiles.length+' file(s) added');
+// ===== ADD/DELETE TABS =====
+function addTab(){
+    var name=document.getElementById('mt-name').value.trim();
+    if(!name){toast('Name required');return;}
+    var type=document.getElementById('mt-type').value;
+    var colsStr=document.getElementById('mt-cols').value.trim();
+    var cols=type==='bidsheet'?['RFP ID','Job Family','Title','Description','Country','Site','Demand','Pay Rate','Proposed','OT','Bidding?','Comments']:type==='freeform'?[]:colsStr?colsStr.split(',').map(function(c){return c.trim();}):['Col 1','Col 2','Col 3'];
+    var id='custom_'+Date.now();
+    customTabs.push({id:id,name:name,type:type,cols:cols});
+    tabData[id]={rows:[],content:''};
+    closeModal('m-addtab');renderSidebar();renderAllPages();nav('tab_'+id);toast('Tab added');
+    document.getElementById('mt-name').value='';document.getElementById('mt-cols').value='';
+}
+function deleteTab(id){
+    if(!confirm('Delete this tab and all its data?'))return;
+    // Remove from custom tabs
+    customTabs=customTabs.filter(function(t){return t.id!==id;});
+    // Also remove from default tabs if it's a default
+    defaultTabs=defaultTabs.filter(function(t){return t.id!==id;});
+    delete tabData[id];
+    renderSidebar();renderAllPages();nav('generate');toast('Tab deleted');
 }
 
-function removeFile(idx){
-    files.splice(idx,1);
-    renderFiles(); updateCmd();
+// ===== ADD/DELETE ROWS =====
+function openAddRow(tabId){
+    editingTabId=tabId;
+    var allTabs=defaultTabs.concat(customTabs);
+    var tab=allTabs.find(function(t){return t.id===tabId;});
+    if(!tab)return;
+    document.getElementById('mr-title').textContent='Add Row — '+tab.name;
+    var html='';
+    tab.cols.forEach(function(col,ci){html+='<div class="fg"><label>'+col+'</label><input id="mrf-'+ci+'"></div>';});
+    document.getElementById('mr-fields').innerHTML=html;
+    openModal('m-addrow');
+}
+function saveRow(){
+    var allTabs=defaultTabs.concat(customTabs);
+    var tab=allTabs.find(function(t){return t.id===editingTabId;});
+    if(!tab)return;
+    var row=[];
+    tab.cols.forEach(function(c,ci){row.push(document.getElementById('mrf-'+ci).value);});
+    if(!tabData[editingTabId])tabData[editingTabId]={rows:[],content:''};
+    tabData[editingTabId].rows.push(row);
+    closeModal('m-addrow');refreshTab(editingTabId);toast('Row added');
+}
+function deleteRow(tabId,ri){
+    tabData[tabId].rows.splice(ri,1);
+    refreshTab(tabId);
 }
 
-function renderFiles(){
-    var html = '';
-    if(!files.length) html='<div class="empty">No files added yet. Click "Add File" to upload.</div>';
-    else files.forEach(function(f,i){
-        html+='<div class="file-row"><i class="ri-file-text-line" style="color:var(--p)"></i><span class="fname">'+f.name+'</span><span style="font-size:.68rem;color:var(--mt)">'+(f.size/1024).toFixed(0)+'KB</span><button class="btn btn-g" onclick="removeFile('+i+')"><i class="ri-delete-bin-line"></i></button></div>';
-    });
-    document.getElementById('gen-files').innerHTML=html;
+// ===== FILES =====
+function renderFileList(){
+    var html='';
+    if(!files.length) html='<div class="empty">No files</div>';
+    else files.forEach(function(f,i){html+='<div class="file-row"><i class="ri-file-text-line" style="color:var(--p)"></i><span class="fname">'+f.name+'</span><span style="font-size:.68rem;color:var(--mt)">'+(f.size/1024).toFixed(0)+'KB</span><button class="btn btn-g" onclick="files.splice('+i+',1);renderFileList()"><i class="ri-delete-bin-line"></i></button></div>';});
     document.getElementById('all-files').innerHTML=html;
-    setBadge('b-files', files.length);
+    var el=document.getElementById('b-files');if(el){el.textContent=files.length;el.classList.toggle('has',files.length>0);}
 }
 
-function updateCmd(){
-    var card = document.getElementById('cmd-card');
-    if(!files.length){ card.style.display='none'; return; }
-    card.style.display='block';
-    // Save combined content to a temp file
-    var combined = files.map(function(f){return '=== FILE: '+f.name+' ===\n'+f.content;}).join('\n\n');
-    // Create downloadable combined file
-    var blob = new Blob([combined],{type:'text/plain'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    var safeName = 'rfp_input_'+Date.now()+'.txt';
-    a.href=url; a.download=safeName; a.click(); URL.revokeObjectURL(url);
-
-    document.getElementById('cmd-text').textContent='python "c:\\Isha\\Claude\\Temp labor\\run_rfp.py" "'+safeName+'"';
-}
-
-function doCopyCmd(){
-    var text = document.getElementById('cmd-text').textContent;
-    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
-    toast('Command copied!');
-}
-
-// RESET
-function doReset(){
-    files=[];lastOutput=null;
-    renderFiles();
-    document.getElementById('cmd-card').style.display='none';
-    ['v-cover','v-req','v-quest','v-sla','v-bid','v-mu','v-disc','v-conv'].forEach(function(id){
-        document.getElementById(id).innerHTML='<div class="empty">Generate RFP to see preview</div>';
-    });
-    ['b-req','b-q','b-sla','b-bid','b-mu','b-disc','b-conv','b-files'].forEach(function(id){setBadge(id,0);});
-    nav('generate');
-    toast('Reset — ready for new RFP');
-}
-
-// BADGES
-function setBadge(id,n){var el=document.getElementById(id);if(el){el.textContent=n;el.classList.toggle('has',n>0);}}
-
-// TOAST
-function toast(m){var t=document.getElementById('tst');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},2500);}
-
-// PREVIEW - load generated output Excel and show in tabs
-// User can drag the output .xlsx onto the page to preview
-document.addEventListener('dragover',function(e){e.preventDefault();});
-document.addEventListener('drop',function(e){
-    e.preventDefault();
-    var file=e.dataTransfer.files[0];
-    if(!file||!file.name.endsWith('.xlsx'))return;
-    var reader=new FileReader();
-    reader.onload=function(ev){
-        var data=new Uint8Array(ev.target.result);
-        var wb=XLSX.read(data,{type:'array'});
-        loadPreview(wb);
-        toast('Output loaded — check preview tabs');
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-function loadPreview(wb){
-    // Cover Letter
-    var ws=wb.Sheets['1. Cover Letter'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var html='<table class="t">';
-        rows.forEach(function(row){
-            var cells=row.filter(function(c){return c&&String(c).trim();});
-            if(cells.length) html+='<tr>'+cells.map(function(c){return '<td>'+String(c).substring(0,120)+'</td>';}).join('')+'</tr>';
-        });
-        html+='</table>';
-        document.getElementById('v-cover').innerHTML='<div class="tbl-w">'+html+'</div>';
-    }
-
-    // Requirements
-    ws=wb.Sheets['3. Requirements'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var dataRows=rows.filter(function(r){return r[1]&&!isNaN(r[1]);});
-        setBadge('b-req',dataRows.length);
-        var html='<div class="tbl-w"><table class="t"><thead><tr><th>#</th><th>Category</th><th>Sub-Cat</th><th>Requirement</th></tr></thead><tbody>';
-        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td><span class="chip">'+(r[2]||'All')+'</span></td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td></tr>';});
-        html+='</tbody></table></div>';
-        document.getElementById('v-req').innerHTML=html;
-    }
-
-    // Questionnaire
-    ws=wb.Sheets['4. Questionnaire'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var dataRows=rows.filter(function(r){return r[1]&&!isNaN(r[1]);});
-        setBadge('b-q',dataRows.length);
-        var html='<div class="tbl-w"><table class="t"><thead><tr><th>#</th><th>Category</th><th>Question</th></tr></thead><tbody>';
-        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+(r[2]||'')+'</td><td>'+(r[3]||'')+'</td></tr>';});
-        html+='</tbody></table></div>';
-        document.getElementById('v-quest').innerHTML=html;
-    }
-
-    // SLAs
-    ws=wb.Sheets['5. Service Level Agreements'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var dataRows=rows.filter(function(r){return r[1]&&String(r[1]).length>3&&r[1]!=='KPI';});
-        setBadge('b-sla',dataRows.length);
-        var html='<div class="tbl-w"><table class="t"><thead><tr><th>KPI</th><th>Target</th><th>Period</th></tr></thead><tbody>';
-        dataRows.forEach(function(r){html+='<tr><td><b>'+(r[1]||'')+'</b></td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
-        html+='</tbody></table></div>';
-        document.getElementById('v-sla').innerHTML=html;
-    }
-
-    // Bid Sheets (combine all regions)
+// ===== EXPORT =====
+function doExport(){
+    if(!D){toast('Upload a file first to generate data');return;}
+    // Build export payload with latest edits
+    var exportData = JSON.parse(JSON.stringify(D));
+    // Override with any manual edits from tabData
+    exportData.requirements = exportData.requirements||{};
+    exportData.requirements.items = tabData['req'].rows.map(function(r){return {category:r[1]||'All',subcategory:r[2]||'',text:r[3]||''};});
+    var qSections={};
+    tabData['quest'].rows.forEach(function(r){var cat=r[1]||'General';if(!qSections[cat])qSections[cat]={name:cat,questions:[]};qSections[cat].questions.push({text:r[2]||'',type:'Text'});});
+    exportData.questionnaire={sections:Object.values(qSections)};
+    exportData.slas=tabData['sla'].rows.map(function(r){return{name:r[0]||'',description:r[1]||'',target:r[2]||'',frequency:r[3]||'Monthly',source:r[4]||''};});
     var allRoles=[];
-    ['6.a Bid Sheet_APAC','6.b Bid Sheet_EMEA','6.c Bid Sheet_LATAM','6.d Bid Sheet_NA'].forEach(function(sn){
-        ws=wb.Sheets[sn];
-        if(!ws)return;
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        rows.forEach(function(r){
-            if(r[1]&&String(r[1]).match(/^[A-Z]{2}\d/)){ allRoles.push(r); }
-        });
+    [['bid_apac','APAC'],['bid_emea','EMEA'],['bid_latam','LATAM'],['bid_na','NA']].forEach(function(pair){
+        tabData[pair[0]].rows.forEach(function(r){allRoles.push({id:r[0]||'',region:pair[1],family:r[1]||'',title:r[2]||'',desc:r[3]||'',country:r[4]||'',site:r[5]||'',demand:r[6]||'',rate:r[7]||''});});
     });
-    setBadge('b-bid',allRoles.length);
-    var html='<div class="tbl-w"><table class="t"><thead><tr><th>ID</th><th>Family</th><th>Title</th><th>Country</th><th>Site</th><th>Demand</th><th>Rate</th></tr></thead><tbody>';
-    allRoles.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+(r[5]||'')+'</td><td>'+(r[6]||'')+'</td><td>'+(r[7]||'')+'</td><td>'+(r[8]?'$'+r[8]:'')+'</td></tr>';});
-    html+='</tbody></table></div>';
-    document.getElementById('v-bid').innerHTML=html;
+    exportData.bidSheets=exportData.bidSheets||{};exportData.bidSheets.roles=allRoles;
+    exportData.markup={rows:tabData['markup'].rows.map(function(r){return{region:r[0]||'',location:r[1]||'',country:r[2]||'',family:r[3]||'',demand:r[4]||''};})};
+    exportData.discounts={conversion:[],rebate:[],tenure:[]};
+    tabData['disc'].rows.forEach(function(r){var t=(r[0]||'').toLowerCase();var obj={low:r[1]||'',high:r[2]||'',pct:r[3]||''};if(t.includes('conv'))exportData.discounts.conversion.push(obj);else if(t.includes('reb'))exportData.discounts.rebate.push(obj);else exportData.discounts.tenure.push(obj);});
+    exportData.conversion={fxRates:tabData['conv'].rows.map(function(r){return{location:r[0]||'',country:r[1]||'',currency:r[2]||'',rate:r[3]||''};})};
+    // Add custom tabs
+    exportData.customTabs=customTabs.map(function(ct){return{name:ct.name,cols:ct.cols,rows:tabData[ct.id]?tabData[ct.id].rows:[]};});
 
-    // Mark-Up
-    ws=wb.Sheets['7. Bid Sheet_Mark-Up'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var dataRows=rows.filter(function(r){return r[1]&&(r[1]==='APAC'||r[1]==='EMEA'||r[1]==='LATAM'||r[1]==='North America'||r[1]==='NA');});
-        setBadge('b-mu',dataRows.length);
-        var html='<div class="tbl-w"><table class="t"><thead><tr><th>Region</th><th>Location</th><th>Country</th><th>Family</th><th>Demand</th></tr></thead><tbody>';
-        dataRows.forEach(function(r){html+='<tr><td>'+r[1]+'</td><td>'+(r[2]||'')+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
-        html+='</tbody></table></div>';
-        document.getElementById('v-mu').innerHTML=html;
-    }
-
-    // Discounts
-    ws=wb.Sheets['8. Discounts'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var html='<div class="tbl-w"><table class="t"><tbody>';
-        rows.forEach(function(r){
-            var cells=r.filter(function(c){return c&&String(c).trim();});
-            if(cells.length) html+='<tr>'+cells.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';
-        });
-        html+='</tbody></table></div>';
-        document.getElementById('v-disc').innerHTML=html;
-        setBadge('b-disc', rows.filter(function(r){return r[2]&&!isNaN(r[2]);}).length);
-    }
-
-    // Conversion
-    ws=wb.Sheets['9. Conversion Rates'];
-    if(ws){
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        var dataRows=rows.filter(function(r){return r[2]&&String(r[2]).length>3&&r[2]!=='Location';});
-        setBadge('b-conv',dataRows.length);
-        var html='<div class="tbl-w"><table class="t"><thead><tr><th>Location</th><th>Country</th><th>Currency</th><th>Rate</th></tr></thead><tbody>';
-        dataRows.forEach(function(r){html+='<tr><td>'+r[2]+'</td><td>'+(r[3]||'')+'</td><td>'+(r[4]||'')+'</td><td>'+(r[5]||'')+'</td></tr>';});
-        html+='</tbody></table></div>';
-        document.getElementById('v-conv').innerHTML=html;
-    }
+    // Call server to produce formatted Excel
+    document.getElementById('ptitle').textContent='Downloading...';
+    fetch(SERVER+'/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(exportData)})
+        .then(function(r){if(!r.ok)throw new Error('Server error');return r.blob();})
+        .then(function(blob){
+            var url=URL.createObjectURL(blob);
+            var a=document.createElement('a');a.href=url;
+            var client=(D.projectSetup||{}).clientName||'RFP';
+            a.download=client.replace(/[^a-zA-Z0-9]/g,'_')+'_Temp_Labor_RFP.xlsx';
+            a.click();URL.revokeObjectURL(url);
+            document.getElementById('ptitle').textContent='Download Excel';
+            toast('Excel downloaded!');
+        })
+        .catch(function(err){toast('Export failed — is server.py running?');document.getElementById('ptitle').textContent='Download Excel';});
 }
 
-// INIT
-renderFiles();
+// ===== RESET =====
+function doReset(){
+    if(!confirm('Reset everything?'))return;
+    D=null;files=[];customTabs=[];
+    defaultTabs.forEach(function(t){tabData[t.id]={rows:[],content:''};});
+    document.getElementById('upbox').classList.remove('done');
+    document.getElementById('up-label').textContent='Click to upload';
+    document.getElementById('gen-status').style.display='none';
+    renderSidebar();renderAllPages();renderFileList();nav('generate');toast('Reset');
+}
+
+// ===== MODAL =====
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(function(m){m.onclick=function(e){if(e.target===m)m.classList.remove('open');};});
+
+// ===== UTILS =====
+function toast(m){var t=document.getElementById('tst');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},2500);}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ===== INIT =====
+renderSidebar();renderAllPages();renderFileList();bindNav();
 </script>
 </body>
 </html>

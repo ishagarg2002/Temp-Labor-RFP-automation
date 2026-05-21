@@ -106,7 +106,7 @@ def call_ai(content):
     client = anthropic.Anthropic(api_key=API_KEY, http_client=httpx.Client(verify=False))
     print("  Calling AI...")
     r = client.messages.create(model=MODEL, max_tokens=8000, system=SYSTEM,
-        messages=[{"role":"user","content":"Generate a Temp Labor RFP JSON for the client described below. IMPORTANT: In projectSetup.description, write a 2-sentence description of THIS specific client (their industry, what they do). In projectSetup.countries, list the actual countries where they operate. In requirements.overview, write a paragraph about THIS client's temp labor program goals. Be concise: 30 requirements, 30 questions, 15 SLAs, keep text to 1 sentence each. Complete valid JSON under 7000 tokens:\n\n"+content}])
+        messages=[{"role":"user","content":"Generate a Temp Labor RFP JSON for the client described below. IMPORTANT: In projectSetup.description, write a 2-sentence description of THIS specific client. In projectSetup.countries, list actual countries they operate in. In requirements.overview, write about THIS client's temp labor goals. REGION MAPPING: APAC=India,China,Japan,Thailand,Singapore,Australia,Philippines. EMEA=UK,Germany,France,Ireland,Switzerland,Egypt,South Africa,UAE. LATAM=Brazil,Mexico,Argentina. NA=US,Canada,Puerto Rico. Map roles to CORRECT region based on country. Be concise: 30 reqs, 30 questions, 15 SLAs, 1 sentence each. Valid JSON under 7000 tokens:\n\n"+content}])
     raw = r.content[0].text.strip()
     if raw.startswith('```'): raw = raw.split('\n',1)[1]
     if raw.endswith('```'): raw = raw[:-3]
